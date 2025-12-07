@@ -15,10 +15,19 @@
 //   window.electronAPI.setTitle(title)
 // })
 
-const btn = document.getElementById('btn')
-const filePathElement = document.getElementById('filePath')
+// const btn = document.getElementById('btn')
+// const filePathElement = document.getElementById('filePath')
 
-btn.addEventListener('click', async () => {
-  const filePath = await window.electronAPI.openFile()
-  filePathElement.innerText = filePath
+// btn.addEventListener('click', async () => {
+//   const filePath = await window.electronAPI.openFile()
+//   filePathElement.innerText = filePath
+// })
+
+const counter = document.getElementById('counter')
+
+window.electronAPI.onUpdateCounter((value) => {
+  const oldValue = Number(counter.innerText)
+  const newValue = oldValue + value
+  counter.innerText = newValue.toString()
+  window.ElectronAPI.counterValue(newValue)
 })

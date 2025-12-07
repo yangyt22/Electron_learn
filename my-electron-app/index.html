@@ -7,7 +7,7 @@
       http-equiv="X-Content-Security-Policy"
       content="default-src 'self'; script-src 'self'"
     />
-    <title>Dialog</title>
+    <title>Menu Counter</title>
   </head>
   <body>
     <!-- <h1>Hello from Electron renderer!</h1>
@@ -16,10 +16,14 @@
         Chromium <span id="chrome-version"></span>,
         and Electron <span id="electron-version"></span>.
     </p> -->
+
     <!-- Title: <input id="title"/>
     <button id="btn" type="button">Set</button> -->
-    <button id="btn" type="button">Open a File</button>
-    File Path: <strong id="filePath"></strong>
+
+    <!-- <button id="btn" type="button">Open a File</button>
+    File Path: <strong id="filePath"></strong> -->
+
+    Current value: <strong id="counter">0</strong>
   </body>
   <script src="./renderer.js"></script>
 </html>
