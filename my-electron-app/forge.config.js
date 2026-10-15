@@ -1,3 +1,4 @@
+const path = require('node:path');
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
@@ -9,6 +10,8 @@ module.exports = {
     name: 'MyElectronApp',
     overwrite: true,
     asar: true,
+    // 应用图标（win32 会取 icon.ico，linux 会取 icon.png）
+    icon: path.join(__dirname, 'assets', 'icon'),
     // 不随应用分发的内容（相对应用根目录、posix 分隔符、带前导斜杠）。
     // 注意：此数组会整体覆盖 forge 默认的 ignore，故 out/ 需自行列出，
     // 否则历史遗留的 out/ 目录会被递归打进应用。
@@ -28,7 +31,14 @@ module.exports = {
       config: {
         name: 'MyElectronApp',
         authors: 'yangyating',
-        description: 'ElectronApp'
+        description: 'Electron 多页面演示应用',
+        title: 'MyElectronApp',
+        // 安装器窗口图标（标题栏 + 安装程序文件图标）
+        setupIcon: path.join(__dirname, 'assets', 'icon.ico'),
+        // 安装时闪屏动画（Squirrel Setup 窗口背景 GIF）
+        loadingGif: path.join(__dirname, 'assets', 'install-spinner.gif'),
+        // 控制面板/添加删除程序里显示的图标（离线可用）
+        iconUrl: 'file:///' + path.join(__dirname, 'assets', 'icon.ico').replace(/\\/g, '/'),
       }
     },
     {

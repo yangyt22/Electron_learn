@@ -1,5 +1,12 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog, clipboard } = require("electron/main");
 
+// 拦截 Squirrel Windows 安装/更新/卸载事件，防止安装过程中弹出主窗口。
+// electron-squirrel-startup 会识别 --squirrel-install / --squirrel-updated
+// / --squirrel-obsolete / --squirrel-uninstall 参数，创建快捷方式后退出。
+if (require("electron-squirrel-startup")) {
+  app.quit();
+}
+
 const path = require("node:path");
 const fs = require("node:fs");
 const os = require("node:os");
@@ -135,6 +142,7 @@ const createWindow = () => {
     minWidth: 720,
     minHeight: 560,
     backgroundColor: "#f5f6f8",
+    icon: path.join(__dirname, "assets", "icon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },

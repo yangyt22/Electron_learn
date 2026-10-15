@@ -23,6 +23,10 @@ Electron_learn/
     ├── vendor/                   # 本地化的第三方 UI 框架（见 vendor/README.md）
     │   ├── bootstrap/            # Bootstrap 5.3.8 · CSS + bundle JS（含 Popper）
     │   └── bootstrap-icons/      # Bootstrap Icons 1.13.2 · CSS + 字体
+    ├── assets/                   # 应用图标与安装器素材
+    │   ├── icon.ico              # Windows 多尺寸图标（含 16~256）
+    │   ├── icon.png              # 256x256 PNG（Linux / README / 调试）
+    │   └── install-spinner.gif   # Squirrel 安装程序闪屏动画
     ├── forge.config.js           # Electron Forge 打包配置（squirrel / zip / deb / rpm）
     ├── package.json
     └── .vscode/launch.json       # 调试配置
@@ -71,6 +75,41 @@ Windows 下的产物：
 > ```bash
 > node node_modules/electron-winstaller/script/select-7z-arch.js
 > ```
+
+### 安装器行为与 Windows 高对比度
+
+- **安装时窗口反复打开**：Squirrel 安装器会先以 `--squirrel-install` / `--squirrel-updated`
+  参数启动一次应用（用于创建快捷方式），再正常启动一次应用。`main.js` 已通过
+  `electron-squirrel-startup` 拦截这些参数，参数存在时只创建快捷方式、不打开主窗口。
+  如果拦截失败，安装过程中就会看到窗口弹出好几次。
+- **页面/安装器出现绿色/青色色块**：这是 Windows「高对比度」或「颜色滤镜」把 Chromium
+  的颜色强制替换成了系统主题色。`styles.css` 已加 `@media (forced-colors: active)`
+  覆盖，让应用保持自身样式。
+
+### 应用图标与安装器闪屏
+
+品牌素材放在 `assets/`：
+
+- `icon.ico`：Windows 多尺寸图标（16/24/32/48/64/128/256），用于应用窗口、打包后的
+  `MyElectronApp.exe`、`Setup.exe` 以及控制面板中的程序项。
+- `icon.png`：256x256 PNG，供 Linux 打包与调试提取使用。
+- `install-spinner.gif`：Squirrel 安装器窗口的闪屏动画（400×220，8 帧循环）。
+
+相关配置点：
+
+| 文件 | 配置项 | 作用 |
+| --- | --- | --- |
+| `forge.config.js` | `packagerConfig.icon` | 应用 exe 与窗口图标 |
+| `forge.config.js` | `makers[0].config.setupIcon` | 安装程序 `Setup.exe` 的图标 |
+| `forge.config.js` | `makers[0].config.loadingGif` | 安装器窗口的自定义 GIF 闪屏 |
+| `forge.config.js` | `makers[0].config.iconUrl` | 控制面板/添加删除程序图标 |
+| `main.js` | `BrowserWindow.icon` | 开发模式与打包后的窗口图标 |
+| `package.json` | `productName` | 安装器标题与控制面板显示名 |
+
+> 当前图标采用蓝→紫渐变圆角底 + 白色「E」字形；安装器闪屏在图标下方显示三个跳动圆点。
+> 这些素材由一次性的生成脚本生成（已本地保存生成脚本副本），后续如果想换，替换
+> `assets/` 里的文件即可，其中 `.ico` 建议保留多尺寸，`install-spinner.gif` 建议
+> 保持 400×220 或相近比例。
 
 ## 页面与路由
 

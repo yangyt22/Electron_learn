@@ -1,7 +1,8 @@
 {
   "name": "my-electron-app",
+  "productName": "MyElectronApp",
   "version": "1.0.0",
-  "description": "my-electron-app",
+  "description": "Electron 多页面演示应用",
   "main": "main.js",
   "scripts": {
     "start": "electron-forge start",

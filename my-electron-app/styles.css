@@ -20,6 +20,16 @@
   --brand: #2f6fed;
 }
 
+/* 防止 Windows 高对比度/强制颜色模式把页面覆盖成纯色块
+   （例如把背景强制成绿色、文字变成不可读的矩形）。
+   这是 Electron 演示应用，以视觉正确性优先；正式产品应保留 forced-colors
+   的媒体查询做无障碍适配。 */
+@media (forced-colors: active) {
+  * {
+    forced-color-adjust: none !important;
+  }
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
