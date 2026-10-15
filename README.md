@@ -44,6 +44,34 @@ Electron_learn/
 | `npm run package` | 打包为免安装目录 |
 | `npm run make` | 生成安装包（Squirrel / zip / deb / rpm） |
 
+## 打包与分发
+
+```bash
+cd my-electron-app
+npm run package                        # 免安装版
+npm run make                           # 安装包（会先自动执行一次 package，可用 --skip-package 复用上次产物）
+```
+
+Windows 下的产物：
+
+| 路径 | 说明 | 体积 |
+| --- | --- | --- |
+| `build/MyElectronApp-win32-x64/` | 免安装版，整个目录拷走即可运行（双击 `MyElectronApp.exe`） | ≈ 327 MB |
+| `build/make/squirrel.windows/x64/MyElectronApp-1.0.0 Setup.exe` | Squirrel 安装程序 | ≈ 127 MB |
+| `build/make/squirrel.windows/x64/MyElectronApp-1.0.0-full.nupkg` | 完整更新包（Squirrel 自动更新用） | ≈ 127 MB |
+| `build/make/squirrel.windows/x64/RELEASES` | 更新清单 | 84 B |
+
+三点说明：
+
+- **输出目录**由 `forge.config.js` 顶层的 `outDir` 决定。写成 `packagerConfig.out` **不会生效**（会被 forge 覆盖）。
+- **平台差异**：Windows 上只会执行 `maker-squirrel`；`maker-deb` / `maker-rpm` 是 Linux 专用、`maker-zip` 限 darwin，在 Windows 上会被自动跳过。
+- **打包内容**：`packagerConfig.ignore` 控制哪些文件不进包（已排除 `.history` / `.vscode` / 输出目录等）。注意该数组会**整体覆盖** forge 的默认 ignore，改动时别漏掉输出目录，否则会被递归打进应用。
+
+> 若 `npm run make` 报 `System.ComponentModel.Win32Exception: 系统找不到指定的文件`，通常是 `electron-winstaller` 的 postinstall 被跳过，导致 vendor 里缺少 `7z.exe`（Squirrel 解包 nupkg 要用）。手动补跑一次即可：
+> ```bash
+> node node_modules/electron-winstaller/script/select-7z-arch.js
+> ```
+
 ## 页面与路由
 
 单窗口多页面 Demo：渲染进程内实现 hash 路由，顶部导航栏（渲染进程驱动）与菜单栏
