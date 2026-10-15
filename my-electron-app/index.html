@@ -7,23 +7,64 @@
       http-equiv="X-Content-Security-Policy"
       content="default-src 'self'; script-src 'self'"
     />
-    <title>Menu Counter</title>
+    <title>Electron Learn · 多页面 Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <!-- <h1>Hello from Electron renderer!</h1>
-    <p>
-        We are using Node.js <span id="node-version"></span>,
-        Chromium <span id="chrome-version"></span>,
-        and Electron <span id="electron-version"></span>.
-    </p> -->
+    <header class="topbar">
+      <span class="brand">Electron Learn</span>
+      <nav id="nav">
+        <a href="#/home" data-route="home">首页</a>
+        <a href="#/counter" data-route="counter">计数器</a>
+        <a href="#/window" data-route="window">窗口控制</a>
+        <a href="#/dialog" data-route="dialog">文件对话框</a>
+        <a href="#/notify" data-route="notify">通知</a>
+      </nav>
+    </header>
 
-    <!-- Title: <input id="title"/>
-    <button id="btn" type="button">Set</button> -->
+    <main>
+      <!-- 首页：contextBridge 注入的环境信息（无 IPC 调用） -->
+      <section id="page-home" class="page">
+        <h1>首页 · 应用信息</h1>
+        <p>以下信息由 preload 通过 contextBridge 注入，不涉及 IPC 通信：</p>
+        <ul id="versions"></ul>
+        <p class="hint">提示：点击顶部导航，或使用菜单栏「视图」（Ctrl+1 ~ Ctrl+5）切换页面。</p>
+      </section>
 
-    <!-- <button id="btn" type="button">Open a File</button>
-    File Path: <strong id="filePath"></strong> -->
+      <!-- 计数器：主进程 → 渲染进程（webContents.send） -->
+      <section id="page-counter" class="page">
+        <h1>计数器 · 主进程 → 渲染进程</h1>
+        <p>菜单栏 MyElectronApp → Increment / Decrement（Ctrl+↑ / Ctrl+↓）触发主进程 webContents.send 推送。</p>
+        <p>Current value: <strong id="counter">0</strong></p>
+        <p class="hint">每次更新还会经 counter-value（单向）回传主进程，打印在启动终端里。</p>
+      </section>
 
-    Current value: <strong id="counter">0</strong>
+      <!-- 窗口控制：渲染进程 ↔ 主进程（invoke/handle） -->
+      <section id="page-window" class="page">
+        <h1>窗口控制 · 渲染进程 → 主进程（invoke/handle）</h1>
+        <p>窗口对象只存在于主进程，渲染进程通过 ipcRenderer.invoke 请求主进程操作。</p>
+        <button id="btn-minimize" type="button">最小化</button>
+        <button id="btn-maximize" type="button">最大化 / 还原</button>
+        <button id="btn-close" type="button">关闭窗口</button>
+      </section>
+
+      <!-- 文件对话框：渲染进程 ↔ 主进程（invoke/handle，返回值） -->
+      <section id="page-dialog" class="page">
+        <h1>文件对话框 · 渲染进程 ↔ 主进程（invoke/handle）</h1>
+        <p>系统对话框 API 只能在主进程调用，invoke/handle 把结果异步返回给渲染进程。</p>
+        <button id="btn-open" type="button">打开文件…</button>
+        <button id="btn-save" type="button">另存为…</button>
+        <p>结果: <strong id="dialog-result">（无）</strong></p>
+      </section>
+
+      <!-- 通知：纯渲染进程（HTML5 API，无 IPC） -->
+      <section id="page-notify" class="page">
+        <h1>通知 · 纯渲染进程（无 IPC）</h1>
+        <p>使用浏览器 Notification API，完全不经过主进程——这是「非主进程」能力的对照组。</p>
+        <button id="btn-notify" type="button">发一条通知</button>
+        <p id="notify-state"></p>
+      </section>
+    </main>
+    <script src="./renderer.js"></script>
   </body>
-  <script src="./renderer.js"></script>
 </html>

@@ -13,10 +13,11 @@
 Electron_learn/
 ├── README.md
 └── my-electron-app/          # Electron 工程本体
-    ├── main.js               # 主进程：创建窗口、构建菜单、注册 IPC 监听
+    ├── main.js               # 主进程：窗口、菜单、ipcMain 监听/处理器
     ├── preload.js            # 预加载脚本：contextBridge 暴露安全 API
-    ├── renderer.js           # 渲染进程：DOM 与业务逻辑
-    ├── index.html            # 页面结构
+    ├── renderer.js           # 渲染进程：hash 路由 + 各页面逻辑
+    ├── index.html            # 页面结构（5 个路由 section）
+    ├── styles.css            # 样式
     ├── forge.config.js       # Electron Forge 打包配置（squirrel / zip / deb / rpm）
     ├── package.json
     └── .vscode/launch.json   # 调试配置
@@ -38,15 +39,26 @@ Electron_learn/
 | `npm run package` | 打包为免安装目录 |
 | `npm run make` | 生成安装包（Squirrel / zip / deb / rpm） |
 
+## 页面与路由
+
+应用是一个单窗口多页面 Demo：渲染进程内实现 hash 路由（`#/home`、`#/counter`…），
+顶部导航栏（渲染进程驱动）与菜单栏「视图」（主进程驱动，Ctrl+1 ~ Ctrl+5）都能切换页面。
+
+| 路由 | 页面 | 演示的通信模式 |
+| --- | --- | --- |
+| `#/home` | 应用信息 | 无 IPC：preload 经 contextBridge 注入 `process.versions` |
+| `#/counter` | 计数器 | 主 → 渲染（`webContents.send`，菜单触发）+ 渲染 → 主单向回传 |
+| `#/window` | 窗口控制 | 渲染 ↔ 主（`invoke`/`handle`）：最小化 / 最大化 / 关闭 |
+| `#/dialog` | 文件对话框 | 渲染 ↔ 主（`invoke`/`handle` 返回值）：打开文件 / 另存为 |
+| `#/notify` | 通知 | 纯渲染进程：HTML5 Notification，不经过主进程 |
+
 ## 已实践的 IPC 模式
 
-按 git 提交时间线，依次实践了三种通信方向：
+1. **渲染进程 → 主进程（单向）** — `ipcRenderer.send` 配 `ipcMain.on`（计数器回传）
+2. **渲染进程 ↔ 主进程（双向）** — `ipcRenderer.invoke` 配对 `ipcMain.handle`（窗口控制、文件对话框）
+3. **主进程 → 渲染进程** — `webContents.send` 配菜单 `click` 事件（计数推送、路由导航）
 
-1. **渲染进程 → 主进程（单向）** — `ipcRenderer.send` 配 `ipcMain.on`
-2. **渲染进程 ↔ 主进程（双向）** — `ipcRenderer.invoke` 配对 `ipcMain.handle`
-3. **主进程 → 渲染进程** — `webContents.send` 配菜单 `click` 事件
-
-当前生效的是「菜单计数器」示例：菜单栏的 Increment / Decrement 触发主进程向渲染进程推送 `update-counter`，渲染进程更新计数后经 `counter-value` 回传主进程打印。在此之前的主题切换、文件选择等实验代码以注释形式保留在源码中。
+早期的主题切换、文件选择等实验代码已被上述正式实现取代（git 历史中仍可找到）。
 
 ## 技术栈
 
