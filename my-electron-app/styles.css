@@ -1,3 +1,16 @@
+/* =========================================================================
+   应用样式
+   -------------------------------------------------------------------------
+   加载顺序：vendor/bootstrap/bootstrap.min.css → styles.css
+   因此这里的规则可以覆盖框架默认值。
+
+   注意两处「隔离」处理：
+   1) 通用的 button 规则加了 :not([class*="btn"]) 等守卫，避免污染
+      Bootstrap 的 .btn / .btn-close / .accordion-button 等组件；
+   2) legacy 排版规则限定在 .page:not(.ui-page)，而新增的框架页面统一带
+      .ui-page 类，二者互不干扰。
+   ========================================================================= */
+
 :root {
   --bg: #f5f6f8;
   --panel: #ffffff;
@@ -15,46 +28,69 @@ body {
   color: var(--text);
 }
 
+/* ---------------------------------------------------------------- 顶栏 */
+
 .topbar {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 12px 20px;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding: 10px 20px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 1020;
 }
 
-.brand { font-weight: 600; color: var(--brand); }
+.brand { font-weight: 600; color: var(--brand); white-space: nowrap; }
 
-#nav { display: flex; gap: 4px; }
+#nav { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 
 #nav a {
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 6px;
   text-decoration: none;
   color: var(--muted);
   font-size: 14px;
+  white-space: nowrap;
 }
 
 #nav a:hover { background: #eef2fe; color: var(--brand); }
 
 #nav a.active { background: var(--brand); color: #fff; }
 
-main { padding: 28px 32px; max-width: 860px; }
+/* 两组导航之间的竖线分隔 */
+.nav-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 8px;
+  background: var(--line);
+}
+
+/* ---------------------------------------------------------------- 主体 */
+
+main { padding: 24px 32px 48px; max-width: 1180px; }
+
+/* legacy 页面保持较窄的阅读宽度 */
+.page:not(.ui-page) { max-width: 860px; }
 
 .page { display: none; }
 
 .page.active { display: block; }
 
-.page h1 { font-size: 20px; margin-bottom: 8px; }
+/* ---------- legacy 页面的排版（限定作用域，不进入 .ui-page） ---------- */
 
-.page p { color: var(--muted); margin: 10px 0; line-height: 1.6; }
+.page:not(.ui-page) h1 { font-size: 20px; margin-bottom: 8px; }
 
-.page .hint { font-size: 13px; }
+.page:not(.ui-page) p { color: var(--muted); margin: 10px 0; line-height: 1.6; }
+
+.page:not(.ui-page) .hint { font-size: 13px; }
 
 #counter { font-size: 32px; color: var(--brand); }
 
-button {
+/* legacy 自绘按钮：排除 Bootstrap 的组件类，避免互相打架 */
+button:not([class*="btn"]):not(.nav-link):not(.accordion-button):not(.dropdown-item):not(.list-group-item):not(.page-link) {
   padding: 8px 18px;
   margin-right: 10px;
   border: 1px solid var(--line);
@@ -65,9 +101,102 @@ button {
   font-size: 14px;
 }
 
-button:hover { border-color: var(--brand); color: var(--brand); }
+button:not([class*="btn"]):not(.nav-link):not(.accordion-button):not(.dropdown-item):not(.list-group-item):not(.page-link):hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
 
 #versions { margin: 12px 0 0 20px; line-height: 1.9; }
 
 #dialog-result,
 #notify-state { color: var(--text); font-weight: 600; }
+
+/* ================= UI 框架页（Bootstrap）专用样式 ================= */
+
+/* 页面标题行：左标题 + 右徽章 */
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.ui-page h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 6px; }
+
+.ui-page > .page-head p { margin-bottom: 0; }
+
+/* 演示区块 */
+.demo-block {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  background: var(--panel);
+}
+
+.demo-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 4px; }
+
+.demo-note { font-size: 13px; color: var(--muted); margin-bottom: 14px; line-height: 1.6; }
+
+/* Bootstrap 只有 w-25/50/75/100，这里补齐演示要用的档位 */
+.w-20 { width: 20%; }
+.w-30 { width: 30%; }
+.w-40 { width: 40%; }
+.w-60 { width: 60%; }
+
+/* ---------- 表格页 ---------- */
+
+.check-col { width: 44px; }
+
+.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+
+.sort-icon { font-size: 0.7rem; opacity: 0.4; }
+
+.sortable.sorted-asc .sort-icon,
+.sortable.sorted-desc .sort-icon { opacity: 1; color: var(--brand); }
+
+/* ---------- 表单页 ---------- */
+
+#f-output {
+  background: var(--bg);
+  font-size: 12.5px;
+  line-height: 1.7;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border-radius: 0 0 10px 10px;
+}
+
+/* ---------- 浮层页 ---------- */
+
+.demo-modal-icon { font-size: 2.2rem; }
+
+.app-loading-mask {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 246, 248, 0.7);
+  z-index: 1080;
+}
+
+/* ---------- 仪表盘页 ---------- */
+
+.metric-value {
+  font-size: 1.65rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-bar { height: 6px; }
+
+.dash-chart {
+  display: block;
+  width: 100%;
+  height: 220px;
+}
