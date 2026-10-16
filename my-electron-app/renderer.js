@@ -11,6 +11,7 @@ const routes = [
   "form",
   "overlay",
   "dashboard",
+  "ai",
 ];
 
 function resolveRoute() {

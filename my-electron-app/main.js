@@ -11,6 +11,8 @@ const path = require("node:path");
 const fs = require("node:fs");
 const os = require("node:os");
 
+const aiService = require("./ai-service");
+
 // ---------------------------------------------------------------------------
 // 路由表：主进程的「视图」菜单与渲染进程的 hash 路由共用同一份约定。
 // 分成两组，菜单里表现为两个子菜单。
@@ -36,6 +38,10 @@ const ROUTE_GROUPS = [
       { hash: "#/overlay", label: "浮层与反馈", accel: "CmdOrCtrl+Shift+4" },
       { hash: "#/dashboard", label: "实时仪表盘", accel: "CmdOrCtrl+Shift+5" },
     ],
+  },
+  {
+    label: "AI 能力",
+    routes: [{ hash: "#/ai", label: "AI 助手", accel: "CmdOrCtrl+Alt+1" }],
   },
 ];
 
@@ -198,7 +204,10 @@ const createWindow = () => {
   mainWindow.webContents.openDevTools();
 
   // 窗口关闭时停掉正在跑的指标定时器，避免向已销毁的窗口发送消息
-  mainWindow.on("closed", () => stopMetricsPush());
+  mainWindow.on("closed", () => {
+    stopMetricsPush();
+    stopChat();
+  });
 };
 
 // ---------------------------------------------------------------------------
@@ -233,6 +242,21 @@ function startMetricsPush(target) {
 // ---------------------------------------------------------------------------
 // 应用生命周期
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// AI 会话：同一时刻只跑一个流，新请求会先掐掉旧的，避免两段回答混着吐字
+// ---------------------------------------------------------------------------
+
+let activeChat = null;
+
+function stopChat() {
+  if (activeChat) {
+    activeChat.controller.abort();
+    activeChat = null;
+    return true;
+  }
+  return false;
+}
 
 app.whenReady().then(() => {
   // ---- 渲染进程 → 主进程（单向）：计数器回传 ----
@@ -313,6 +337,72 @@ app.whenReady().then(() => {
     return false;
   });
 
+  // -------------------------------------------------------------------------
+  // AI 助手：请求全在主进程发出，流式结果逐块推回渲染进程
+  // -------------------------------------------------------------------------
+
+  // ---- 配置：明文 apiKey 不出主进程，给渲染进程的只有 hasKey / keyHint ----
+  ipcMain.handle("ai:config:get", () => aiService.describeConfig());
+
+  ipcMain.handle("ai:config:set", (_event, patch) => {
+    aiService.saveConfig(patch || {});
+    return aiService.describeConfig();
+  });
+
+  ipcMain.handle("ai:test", () => aiService.testConnection());
+
+  // ---- 发起流式对话：先返回 requestId，真正的数据靠事件推 ----
+  ipcMain.handle("ai:chat:start", (event, history) => {
+    const target = event.sender;
+    stopChat();
+
+    const controller = new AbortController();
+    const requestId = `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const entry = { requestId, controller };
+    activeChat = entry;
+
+    // 通道收敛成一个 post，保证每条消息都带 requestId，渲染进程好做过滤
+    const post = (channel, payload) => {
+      if (!target.isDestroyed()) target.send(channel, { requestId, ...payload });
+    };
+
+    const mode = aiService.describeConfig().mode;
+    console.log(`[main] ai:chat:start  mode=${mode}  history=${(history || []).length}`);
+
+    // 故意不 await：让 invoke 立刻把 requestId 还回去，流式内容走事件
+    (async () => {
+      let length = 0;
+      try {
+        const result = await aiService.streamChat({
+          history: Array.isArray(history) ? history : [],
+          signal: controller.signal,
+          onDelta: (text) => {
+            length += text.length;
+            post("ai:chunk", { text });
+          },
+        });
+        post("ai:done", { mode: result.mode, elapsedMs: result.elapsedMs, length, aborted: false });
+        console.log(
+          `[main] ai:chat:done  mode=${result.mode}  ${length} 字符 / ${result.elapsedMs}ms`
+        );
+      } catch (error) {
+        if (controller.signal.aborted) {
+          post("ai:done", { mode, elapsedMs: 0, length, aborted: true });
+          console.log("[main] ai:chat:aborted");
+        } else {
+          post("ai:error", { message: error.message || String(error) });
+          console.error("[main] ai:chat:error:", error.message);
+        }
+      } finally {
+        if (activeChat === entry) activeChat = null;
+      }
+    })();
+
+    return { requestId, mode };
+  });
+
+  ipcMain.handle("ai:chat:stop", () => stopChat());
+
   createWindow();
 
   app.on("activate", () => {
@@ -322,5 +412,6 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   stopMetricsPush();
+  stopChat();
   if (process.platform !== "darwin") app.quit();
 });

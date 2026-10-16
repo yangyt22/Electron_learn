@@ -39,6 +39,8 @@
         <a href="#/form" data-route="form">表单</a>
         <a href="#/overlay" data-route="overlay">浮层反馈</a>
         <a href="#/dashboard" data-route="dashboard">实时仪表盘</a>
+        <span class="nav-sep" aria-hidden="true"></span>
+        <a href="#/ai" data-route="ai" class="nav-ai">AI 助手</a>
       </nav>
     </header>
 
@@ -1253,11 +1255,129 @@
           渲染进程只是在被动接收并更新 DOM，这就是「主进程 → 渲染进程」方向的标准用法。
         </p>
       </section>
+
+      <!-- AI 助手：主进程代理模型请求 + SSE 流式推送 -->
+      <section id="page-ai" class="page ui-page">
+        <div class="page-head">
+          <div>
+            <h1>AI 助手</h1>
+            <p class="text-body-secondary mb-0">
+              对话请求全部由<strong>主进程</strong>发出（密钥不进渲染进程，
+              也绕开页面 CSP / CORS），回答以 SSE 流式逐块
+              <code>webContents.send</code> 推回页面。未配置 API Key 时自动降级为
+              <strong>本地模拟模型</strong>，开箱即跑。
+            </p>
+          </div>
+          <div class="btn-group align-self-start">
+            <button
+              class="btn btn-outline-secondary"
+              data-bs-toggle="collapse"
+              data-bs-target="#ai-settings"
+              aria-expanded="false"
+              aria-controls="ai-settings"
+            >
+              <i class="bi bi-gear me-1"></i>模型设置
+            </button>
+            <button class="btn btn-outline-danger" id="ai-clear">
+              <i class="bi bi-trash me-1"></i>清空会话
+            </button>
+          </div>
+        </div>
+
+        <!-- 模型设置（折叠面板） -->
+        <div class="collapse" id="ai-settings">
+          <div class="card card-body mb-3">
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <label class="form-label" for="ai-baseurl">Base URL（OpenAI 兼容）</label>
+                <input
+                  class="form-control"
+                  id="ai-baseurl"
+                  placeholder="https://api.deepseek.com/v1"
+                  spellcheck="false"
+                />
+                <div class="form-text">
+                  DeepSeek / 通义千问 / OpenAI / 本地 Ollama 均可，以 /v1 结尾。
+                </div>
+              </div>
+              <div class="col-6 col-lg-3">
+                <label class="form-label" for="ai-model">模型名</label>
+                <input class="form-control" id="ai-model" placeholder="deepseek-chat" spellcheck="false" />
+              </div>
+              <div class="col-6 col-lg-3">
+                <label class="form-label" for="ai-temp">Temperature（0–2）</label>
+                <input type="number" min="0" max="2" step="0.1" class="form-control" id="ai-temp" />
+              </div>
+              <div class="col-12 col-lg-6">
+                <label class="form-label" for="ai-key">API Key</label>
+                <input type="password" class="form-control" id="ai-key" placeholder="留空表示不修改" autocomplete="off" />
+                <div class="form-text" id="ai-key-hint">
+                  密钥经 safeStorage 加密后存在 userData，渲染进程永远拿不到明文。
+                </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <label class="form-label" for="ai-system">System Prompt</label>
+                <textarea class="form-control" id="ai-system" rows="2"></textarea>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+              <button class="btn btn-primary" id="ai-save">
+                <i class="bi bi-check-lg me-1"></i>保存配置
+              </button>
+              <button class="btn btn-outline-secondary" id="ai-test">
+                <i class="bi bi-plug me-1"></i>测试连接
+              </button>
+              <span class="align-self-center small text-body-secondary" id="ai-test-result"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 消息区 -->
+        <div class="card chat-card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>
+              <i class="bi bi-robot me-1 text-primary"></i>对话
+            </span>
+            <span class="badge text-bg-secondary" id="ai-mode">加载中…</span>
+          </div>
+          <div class="chat-scroll" id="ai-messages"></div>
+
+          <!-- 输入区 -->
+          <div class="chat-input-area">
+            <div class="chat-chips" id="ai-chips">
+              <button class="btn btn-sm btn-outline-primary" data-q="讲讲 Electron 主进程和渲染进程的分工">Electron 三层结构</button>
+              <button class="btn btn-sm btn-outline-primary" data-q="IPC 有哪几种写法？分别适合什么场景？">四种 IPC</button>
+              <button class="btn btn-sm btn-outline-primary" data-q="这个项目是怎么打包成 Windows 安装器的？">打包分发</button>
+            </div>
+            <div class="chat-input-row">
+              <textarea
+                class="form-control chat-input"
+                id="ai-input"
+                rows="1"
+                placeholder="输入问题，Enter 发送，Shift+Enter 换行"
+              ></textarea>
+              <button class="btn btn-primary" id="ai-send">
+                <i class="bi bi-send-fill"></i><span class="ms-1 d-none d-md-inline">发送</span>
+              </button>
+              <button class="btn btn-outline-danger d-none" id="ai-stop" title="停止生成">
+                <i class="bi bi-stop-fill"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p class="small text-body-secondary mt-3 mb-0">
+          观测点：终端会打印 <code>[main] ai:chat:start / done</code>；
+          停止生成靠主进程 <code>AbortController</code> 掐断 fetch，
+          渲染进程只是发了个「停」的指令——所有真正的动作都发生在主进程。
+        </p>
+      </section>
     </main>
 
     <!-- Bootstrap 的组件 JS（含 Popper），必须先于业务脚本加载 -->
     <script src="./vendor/bootstrap/bootstrap.bundle.min.js"></script>
     <script src="./renderer.js"></script>
     <script src="./ui-pages.js"></script>
+    <script src="./ai-page.js"></script>
   </body>
 </html>

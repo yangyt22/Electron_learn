@@ -42,6 +42,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 表单落盘：把渲染进程收集到的数据交给主进程写入用户数据目录
   saveForm: (payload) => ipcRenderer.invoke('form:save', payload),
 
+  // ---- AI 助手 ----
+  // 请求一律由主进程发出：密钥不出主进程，页面 CSP / CORS 也管不到主进程。
+  // 回答不是一次性返回的，而是主进程边收 SSE 边推 ai:chunk，这里逐块转发。
+  ai: {
+    getConfig: () => ipcRenderer.invoke('ai:config:get'),
+    saveConfig: (patch) => ipcRenderer.invoke('ai:config:set', patch),
+    test: () => ipcRenderer.invoke('ai:test'),
+
+    // 立刻拿到 requestId，正文靠下面三个事件回来
+    chat: (history) => ipcRenderer.invoke('ai:chat:start', history),
+    stop: () => ipcRenderer.invoke('ai:chat:stop'),
+
+    onChunk: (callback) =>
+      ipcRenderer.on('ai:chunk', (_event, payload) => callback(payload)),
+    onDone: (callback) =>
+      ipcRenderer.on('ai:done', (_event, payload) => callback(payload)),
+    onError: (callback) =>
+      ipcRenderer.on('ai:error', (_event, payload) => callback(payload))
+  },
+
   // 系统指标：快照 / 静态信息走 invoke，实时数据由主进程定时推送
   metrics: {
     info: () => ipcRenderer.invoke('metrics:info'),
