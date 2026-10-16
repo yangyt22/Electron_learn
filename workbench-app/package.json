@@ -1,0 +1,15 @@
+{
+  "name": "workbench-app",
+  "productName": "WorkbenchApp",
+  "version": "1.0.0",
+  "description": "Electron 工作台示例应用（左右布局侧边栏）",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^39.2.5"
+  }
+}

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+  <title>工作台</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="app">
+    <!-- 自定义标题栏 -->
+    <header class="titlebar">
+      <div class="titlebar-left"></div>
+      <div class="titlebar-drag"></div>
+      <div class="titlebar-right">
+        <button class="wc-btn" title="切换环境">
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 5.5h10l-2.5-2.5M14 10.5H4l2.5 2.5"/>
+          </svg>
+        </button>
+        <div class="window-controls">
+          <button class="wc-btn" id="btn-min" title="最小化">
+            <svg viewBox="0 0 12 12" width="12" height="12"><path d="M1 6h10" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+          <button class="wc-btn" id="btn-max" title="最大化/还原">
+            <svg id="icon-max" viewBox="0 0 12 12" width="12" height="12"><rect x="1.5" y="1.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+            <svg id="icon-restore" viewBox="0 0 12 12" width="12" height="12" style="display:none"><rect x="1.5" y="3.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M3.5 3.5v-2h7v7h-2" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+          <button class="wc-btn wc-close" id="btn-close" title="关闭">
+            <svg viewBox="0 0 12 12" width="12" height="12"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <!-- 左侧边栏（登录/未登录均显示） -->
+      <aside class="sidebar">
+        <!-- 上：用户头像 -->
+        <div class="sidebar-top">
+          <div class="avatar" id="sidebar-avatar" title="个人信息">
+            <!-- 未登录占位头像 -->
+            <svg id="avatar-placeholder" viewBox="0 0 44 44" width="44" height="44">
+              <circle cx="22" cy="22" r="22" fill="#8d93a3"/>
+              <circle cx="22" cy="17" r="6.5" fill="#e8eaf0"/>
+              <path d="M9 38c2-7.5 7-10.5 13-10.5S33 30.5 35 38z" fill="#e8eaf0"/>
+            </svg>
+            <!-- 登录后真实头像 -->
+            <img id="avatar-img" src="assets/avatar.jpg" alt="头像" draggable="false" style="display:none" />
+          </div>
+          <span class="avatar-label" id="avatar-label">未登录</span>
+        </div>
+
+        <!-- 中：导航 -->
+        <nav class="sidebar-nav">
+          <a class="nav-item active" data-page="workbench" href="javascript:;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/>
+            </svg>
+            <span>工作台</span>
+          </a>
+          <a class="nav-item" data-page="settings" href="javascript:;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3.2"/>
+              <path d="M19.4 13.5a7.8 7.8 0 000-3l2-1.5-2-3.5-2.4 1a7.8 7.8 0 00-2.6-1.5L14 2.5h-4l-.4 2.5A7.8 7.8 0 007 6.5l-2.4-1-2 3.5 2 1.5a7.8 7.8 0 000 3l-2 1.5 2 3.5 2.4-1a7.8 7.8 0 002.6 1.5l.4 2.5h4l.4-2.5a7.8 7.8 0 002.6-1.5l2.4 1 2-3.5z"/>
+            </svg>
+            <span>设置</span>
+          </a>
+        </nav>
+
+        <!-- 下：菜单图标 + 弹出菜单 -->
+        <div class="sidebar-bottom">
+          <button class="menu-btn" id="btn-menu" title="菜单">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+
+          <div class="menu-popup" id="menu-popup">
+            <ul>
+              <!-- 以下菜单项仅登录后可见 -->
+              <li data-action="profile" class="auth-only" style="display:none">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.2-4 4-5.5 7-5.5s5.8 1.5 7 5.5"/></svg>
+                <span>个人信息</span>
+              </li>
+              <li data-action="permission" class="auth-only" style="display:none">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h3"/><path d="M14 15.5l1.5 1.5 2.5-3" /></svg>
+                <span>申请权限</span>
+              </li>
+              <li data-action="terminal" class="auth-only" style="display:none">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="13" rx="2"/><path d="M7 10l2.5 2L7 14"/><path d="M12 15h4"/></svg>
+                <span>终端管理</span>
+              </li>
+              <li class="divider auth-only" style="display:none"></li>
+              <li data-action="logout" class="auth-only" style="display:none">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a1 1 0 011 1v14a1 1 0 01-1 1h-4"/><path d="M10 8l-4 4 4 4M6 12h9"/></svg>
+                <span>注销登录</span>
+              </li>
+              <li data-action="exit">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v8"/><path d="M6.6 6.6a8 8 0 1010.8 0"/></svg>
+                <span>退出客户端</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 右侧主区域 -->
+      <main class="main">
+        <!-- ===== 未登录：登录视图 ===== -->
+        <section class="main-view active" id="view-login">
+          <div class="login-split">
+            <!-- 左：温馨提示 + 3D 插画 -->
+            <div class="login-left">
+              <div class="notice-card">
+                <div class="notice-title">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a76c9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 10v4h4l5 4V6l-5 4H3z" fill="#5a76c9"/><path d="M16.5 9.5a4 4 0 010 5"/>
+                  </svg>
+                  <span>温馨提示</span>
+                </div>
+                <p class="notice-text">欢迎使用 <b>统一工作台</b> 桌面客户端</p>
+              </div>
+
+              <svg class="login-illus" viewBox="0 0 300 280" width="300" height="280">
+                <ellipse cx="150" cy="258" rx="90" ry="10" fill="#dfe8f6"/>
+                <path d="M96 236l54 14 54-14-54-10z" fill="#e8eefb"/>
+                <path d="M104 220c30-40 66-52 92-30 22 18 12 48-16 58-34 12-60-8-76-28z" fill="#eef3fb"/>
+                <circle cx="150" cy="150" r="86" fill="none" stroke="#c9d9f2" stroke-width="10" opacity="0.55"/>
+                <ellipse cx="150" cy="160" rx="86" ry="34" fill="none" stroke="#7ea4e8" stroke-width="9" opacity="0.75"/>
+                <rect x="96" y="86" width="112" height="86" rx="12" fill="#e4ecfa" stroke="#9db9ea" stroke-width="3"/>
+                <path d="M128 116c8-10 20-12 30-6 4 3 4 8-1 10-9 4-18 2-24 8-5 5-9 0-5-12z" fill="#3f9e63"/>
+                <path d="M158 128c14-4 26 2 28 12 1 7-5 10-11 7-8-4-12-11-17-19z" fill="#3f9e63" opacity="0.85"/>
+                <rect x="70" y="176" width="160" height="14" rx="7" fill="#d7e3f8"/>
+                <rect x="120" y="190" width="60" height="46" rx="8" fill="#e4ecfa" stroke="#b9cdec" stroke-width="2"/>
+                <rect x="96" y="236" width="108" height="14" rx="7" fill="#dbe6f9"/>
+                <circle cx="238" cy="96" r="10" fill="#cfe0f8"/>
+                <rect x="248" y="120" width="14" height="14" rx="3" fill="#dbe7fa"/>
+                <circle cx="60" cy="120" r="6" fill="#dbe7fa"/>
+                <rect x="42" y="160" width="10" height="10" rx="2" fill="#e3edfb"/>
+              </svg>
+            </div>
+
+            <!-- 右：登录表单 -->
+            <div class="login-right">
+              <div class="login-form-wrap">
+                <div class="login-logo">
+                  <svg viewBox="0 0 48 48" width="52" height="52">
+                    <rect x="4" y="4" width="40" height="40" rx="9" fill="#226bf3"/>
+                    <path d="M14 30l7-12 5 8 4-5 4 9z" fill="#fff"/>
+                    <circle cx="31" cy="17" r="3" fill="#9cc2ff"/>
+                  </svg>
+                </div>
+                <h2 class="login-title">统一工作台</h2>
+
+                <div class="login-form">
+                  <input type="text" id="login-username" class="login-input" placeholder="请输入账号" autocomplete="off" />
+                  <div class="pwd-wrap">
+                    <input type="password" id="login-password" class="login-input" placeholder="请输入密码" />
+                    <button class="eye-btn" id="btn-eye" title="显示/隐藏密码">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#9aa0ac" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" id="eye-open">
+                        <path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/>
+                      </svg>
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#9aa0ac" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" id="eye-closed" style="display:none">
+                        <path d="M4 4l16 16"/><path d="M9.9 5.1A10.7 10.7 0 0112 4.9c6.5 0 10 7.1 10 7.1a17 17 0 01-3.2 3.9M6.1 6.8A16.4 16.4 0 002 12s3.5 7.1 10 7.1c1.7 0 3.2-.4 4.5-1"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <label class="agreement">
+                    <input type="checkbox" id="login-agree" checked />
+                    <span>我已阅读并同意<a href="javascript:;" id="link-agreement">《用户协议》</a></span>
+                  </label>
+
+                  <button class="login-btn" id="btn-login">登 录</button>
+
+                  <div class="login-extra">
+                    <a href="javascript:;" id="link-forgot">忘记密码?</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== 登录后：工作区 ===== -->
+        <section class="main-view" id="view-app" style="display:none">
+          <div class="main-header" id="main-header">
+            <h1 class="page-title" id="page-title">欢迎使用工作台</h1>
+            <div class="header-tools" id="header-tools">
+              <button class="tool-btn" title="刷新">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.34-5.66"/><path d="M20 3v4h-4"/></svg>
+              </button>
+              <div class="view-toggle">
+                <button class="view-btn" title="列表视图">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h2M9 6h11M4 12h2M9 12h11M4 18h2M9 18h11"/></svg>
+                </button>
+                <button class="view-btn active" title="卡片视图">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/></svg>
+                </button>
+              </div>
+              <div class="search-box">
+                <input type="text" id="app-search" placeholder="请输入应用名/描述/访问地址" />
+                <button class="search-btn" title="搜索">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15.5 15.5L20 20"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 工作台页面 -->
+          <div class="page active" id="page-workbench">
+            <div class="empty-state">
+              <svg viewBox="0 0 160 120" width="180" height="135">
+                <circle cx="38" cy="26" r="9" fill="#7ee0c3"/>
+                <circle cx="128" cy="30" r="6" fill="#8db7f5"/>
+                <ellipse cx="80" cy="106" rx="46" ry="7" fill="#eceef3"/>
+                <path d="M46 48l34-14 34 14v36l-34 14-34-14z" fill="#dfe3ec"/>
+                <path d="M46 48l34 14v36l-34-14z" fill="#c9cfdd"/>
+                <path d="M114 48l-34 14v36l34-14z" fill="#eef0f5"/>
+                <path d="M80 34l34 14-34 14-34-14z" fill="#f4f6fa"/>
+                <path d="M114 62l16-10-8 26-10 6z" fill="#d6dbe7"/>
+                <rect x="54" y="66" width="30" height="4" rx="2" fill="#9fb6e8"/>
+                <rect x="54" y="74" width="20" height="4" rx="2" fill="#9fb6e8"/>
+              </svg>
+              <p class="empty-text">未配置应用</p>
+            </div>
+          </div>
+
+          <!-- 设置页面 -->
+          <div class="page" id="page-settings">
+            <div class="settings-page">
+              <h1 class="settings-title">设置</h1>
+
+              <h3 class="settings-group">基本设置</h3>
+              <div class="settings-row">
+                <span class="settings-label">接入地址：</span>
+                <span class="settings-value"><input type="text" class="addr-input" value="https://workbench.example.com" readonly /></span>
+              </div>
+              <div class="settings-row">
+                <span class="settings-label">启动设置：</span>
+                <span class="settings-value checkbox-group">
+                  <label class="cb"><input type="checkbox" id="cb-autostart" /><i></i>开机自启动</label>
+                  <label class="cb"><input type="checkbox" id="cb-minimize" checked /><i></i>登录成功后最小化客户端</label>
+                </span>
+              </div>
+              <div class="settings-row">
+                <span class="settings-label">语言设置：</span>
+                <span class="settings-value">
+                  <select class="lang-select">
+                    <option selected>简体中文</option>
+                    <option>English</option>
+                  </select>
+                </span>
+              </div>
+
+              <h3 class="settings-group">关于</h3>
+              <div class="settings-row">
+                <span class="settings-label">当前版本：</span>
+                <span class="settings-value">
+                  <span class="version-num">V1.0.0</span>
+                  <a class="link" href="javascript:;" id="link-check-update">检查更新</a>
+                </span>
+              </div>
+              <div class="settings-row">
+                <span class="settings-label">隐私保护：</span>
+                <span class="settings-value"><a class="link" href="javascript:;">《用户协议》</a></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 个人信息页面 -->
+          <div class="page" id="page-profile">
+            <div class="profile-page">
+              <h1 class="profile-title">个人信息</h1>
+
+              <div class="profile-head">
+                <img class="profile-avatar" src="assets/avatar.jpg" alt="头像" draggable="false" />
+                <div class="profile-name-wrap">
+                  <span class="profile-name">王小明</span>
+                  <span class="expire-tag">永不过期</span>
+                </div>
+              </div>
+
+              <div class="profile-grid">
+                <div class="p-item"><span class="p-label">账号</span><span class="p-value">wangxiaoming</span></div>
+                <div class="p-item"><span class="p-label">用户目录唯一标识</span><span class="p-value">8f3a9c21e7</span></div>
+                <div class="p-item"><span class="p-label">密码安全</span><span class="p-value"><a class="link" href="javascript:;">重置密码</a></span></div>
+                <div class="p-item"><span class="p-label">电子邮箱</span><span class="p-value">-</span></div>
+                <div class="p-item"><span class="p-label">手机号码</span><span class="p-value">138****8888</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== 右下角工具条（可折叠） ===== -->
+        <div class="diag-bar" id="diag-bar">
+          <div class="diag-items" id="diag-items">
+            <button class="diag-item">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#226bf3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4.5 4.5 0 00-6.4 6.4L3 18v3h3l5.3-5.3a4.5 4.5 0 006.4-6.4L14.5 12l-2.5-2.5z"/></svg>
+              <span>诊断修复</span>
+            </button>
+            <button class="diag-item">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#226bf3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h6M9 16h6"/></svg>
+              <span>日志搜集</span>
+            </button>
+            <button class="diag-item">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#226bf3" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="13" rx="2"/><path d="M7 10l2.5 2L7 14"/><path d="M12 15h4"/></svg>
+              <span>更多操作</span>
+            </button>
+          </div>
+          <button class="diag-toggle" id="btn-diag-toggle" title="展开/收起">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" id="diag-icon-expand">
+              <path d="M8 6l-5 6 5 6"/><path d="M3 12h11"/><path d="M17 4h4v16h-4"/>
+            </svg>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" id="diag-icon-collapse" style="display:none">
+              <path d="M16 6l5 6-5 6"/><path d="M21 12H10"/><path d="M3 4h4v16H3"/>
+            </svg>
+          </button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== 注销登录确认弹窗 ==================== -->
+  <div class="modal-mask" id="logout-modal" style="display:none">
+    <div class="modal">
+      <div class="modal-head">
+        <span class="modal-title">注销登录</span>
+        <button class="modal-close" id="btn-modal-close">
+          <svg viewBox="0 0 14 14" width="14" height="14"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="warn-icon">
+          <svg viewBox="0 0 48 48" width="48" height="48">
+            <circle cx="24" cy="24" r="22" fill="#f5a623"/>
+            <rect x="21.5" y="12" width="5" height="16" rx="2.5" fill="#fff"/>
+            <circle cx="24" cy="34" r="3" fill="#fff"/>
+          </svg>
+        </div>
+        <span class="modal-text">确定注销登录账号?</span>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-primary" id="btn-logout-ok">确定</button>
+        <button class="btn btn-plain" id="btn-logout-cancel">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
